@@ -1,9 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const { connectMongoDB, mysqlPool } = require('./config/db');
-require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const groupRoutes = require('./routes/groupRoutes');
@@ -142,7 +142,18 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+const PORT = parseInt(process.env.PORT || '5000', 10);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`\x1b[32m✔ Server running on port ${PORT} (0.0.0.0)\x1b[0m`);
+    console.log(`\x1b[36m📡 Terminal Uplink Active\x1b[0m`);
+});
+
+// Global Error Handling to prevent silent crashes
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('\x1b[31m✘ Unhandled Rejection at:\x1b[0m', promise, '\x1b[31mreason:\x1b[0m', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('\x1b[31m✘ Uncaught Exception:\x1b[0m', err);
+    process.exit(1);
 });
