@@ -94,21 +94,9 @@ io.on('connection', (socket) => {
                 ...newMessage.toObject(),
                 delivered: true,
             });
-
-            // Mirror to Admin Console
-            io.to('admin_node').emit('admin_message', {
-                ...newMessage.toObject(),
-                groupId
-            });
         } catch (err) {
             console.error('Chat message error:', err.message);
         }
-    });
-
-    // ── Admin Telemetry Channel ─────────────────────────────────────────────
-    socket.on('admin_join', () => {
-        socket.join('admin_node');
-        console.log('\x1b[36m⚡ Admin Terminal Active\x1b[0m');
     });
 
     // ── Typing indicator ──────────────────────────────────────────────────────

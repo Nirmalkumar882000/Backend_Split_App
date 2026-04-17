@@ -18,8 +18,8 @@ const register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const [result] = await mysqlPool.query(
-            'INSERT INTO splits_users (name, email, password, role) VALUES (?, ?, ?, ?)',
-            [name, email, hashedPassword, 'user']
+            'INSERT INTO splits_users (name, email, password) VALUES (?, ?, ?)',
+            [name, email, hashedPassword]
         );
 
         const userId = result.insertId;
@@ -48,14 +48,16 @@ const login = async (req, res) => {
         if (!isMatch) return error(res, 'Invalid credentials', 401);
 
         const token = jwt.sign(
-            { id: user.id, name: user.name, email: user.email, role: user.role },
+            { id: user.id, name: user.name, email: user.email },
             process.env.JWT_SECRET || 'your_super_secret_key',
             { expiresIn: '24h' }
         );
 
+        await logActivity(user.id, 'USER_LOGIN', { email: user.email });
+
         return success(res, {
             token,
-            user: { id: user.id, name: user.name, email: user.email, image: user.image, role: user.role }
+            user: { id: user.id, name: user.name, email: user.email, image: user.image }
         }, 'Login successful');
     } catch (err) {
         return error(res, 'Internal server error', 500);
@@ -77,7 +79,7 @@ const updateProfile = async (req, res) => {
             [name, email, image, userId]
         );
 
-        return success(res, { id: userId, name, email, image, role: req.user.role }, 'Profile updated successfully');
+        return success(res, { id: userId, name, email, image }, 'Profile updated successfully');
     } catch (err) {
         return error(res, 'Internal server error', 500);
     }
@@ -95,6 +97,8 @@ const changePassword = async (req, res) => {
 
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
         await mysqlPool.query('UPDATE splits_users SET password = ? WHERE id = ?', [hashedNewPassword, userId]);
+
+        await logActivity(userId, 'PASSWORD_CHANGE', 'User changed their access key');
 
         return success(res, null, 'Password changed successfully');
     } catch (err) {

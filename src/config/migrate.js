@@ -23,7 +23,6 @@ const migrate = async () => {
                 name VARCHAR(255) NOT NULL,
                 email VARCHAR(255) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
-                role ENUM('user', 'admin') DEFAULT 'user',
                 image LONGTEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`,
@@ -92,33 +91,8 @@ const migrate = async () => {
             await conn.query('ALTER TABLE splits_group_members ADD COLUMN last_seen_message_id VARCHAR(255) DEFAULT NULL');
         }
 
-        // Check splits_users for 'role'
-        if (!usersCols.find(c => c.Field === 'role')) {
-            console.log(`${colors.yellow}⚡ Patching: Adding "role" to splits_users${colors.reset}`);
-            await conn.query("ALTER TABLE splits_users ADD COLUMN role ENUM('user', 'admin') DEFAULT 'user'");
-        }
-
         console.log(`${colors.green}✔ Stage 2 Complete: All Columns Synchronized.${colors.reset}`);
 
-        // ─── STAGE 3: DATA SEEDING (ADMIN ACCOUNT) ─────────────────────────────
-        console.log(`${colors.cyan}🌱 Stage 3: Seeding Essential Records...${colors.reset}`);
-        
-        const adminEmail = 'admin@admin.com';
-        const [existingAdmin] = await conn.query('SELECT id FROM splits_users WHERE email = ?', [adminEmail]);
-
-        if (existingAdmin.length === 0) {
-            const bcrypt = require('bcryptjs');
-            const hashedPassword = await bcrypt.hash('Admin@123', 10);
-            await conn.query(
-                'INSERT INTO splits_users (name, email, password, role) VALUES (?, ?, ?, ?)',
-                ['System Administrator', adminEmail, hashedPassword, 'admin']
-            );
-            console.log(`${colors.green}✔ Root Administrator Created: ${adminEmail}${colors.reset}`);
-        } else {
-            console.log(`${colors.yellow}ℹ Admin Account Verified: Existing.${colors.reset}`);
-        }
-
-        console.log(`${colors.green}✔ Stage 3 Complete: System Records In Sync.${colors.reset}`);
         console.log(`\n${colors.green}✨ DATABASE IS NOW STATE-OF-THE-ART ✨${colors.reset}`);
 
         conn.release();

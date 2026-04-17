@@ -66,6 +66,8 @@ const addMember = async (req, res) => {
             req.io.to(`user_${userIdToAdd}`).emit('refreshGroups');
         }
 
+        await logActivity(req.user.id, 'ADD_MEMBER', { groupId, addedUserId: userIdToAdd, email });
+
         return success(res, { userId: userIdToAdd }, 'Member added successfully');
     } catch (err) {
         return error(res, 'Internal server error', 500);

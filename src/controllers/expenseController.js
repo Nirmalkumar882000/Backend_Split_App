@@ -1,5 +1,5 @@
 const { mysqlPool } = require('../config/db');
-const ActivityLog = require('../models/ActivityLog');
+const { logActivity } = require('../utils/logger');
 const Notification = require('../models/Notification');
 const { success, error } = require('../utils/response');
 
@@ -40,11 +40,7 @@ const addExpense = async (req, res) => {
 
         await conn.commit();
 
-        await ActivityLog.create({
-            user_id: paidBy,
-            action: 'ADD_EXPENSE',
-            data: { expenseId, groupId, amount, description }
-        });
+        await logActivity(paidBy, 'ADD_EXPENSE', { expenseId, groupId, amount, description });
 
         for (const member of members) {
             if (member.user_id !== paidBy) {
@@ -101,11 +97,7 @@ const recordPayment = async (req, res) => {
 
         await conn.commit();
 
-        await ActivityLog.create({
-            user_id: payerId,
-            action: 'RECORD_PAYMENT',
-            data: { expenseId, groupId, amount, payerId, receiverId }
-        });
+        await logActivity(payerId, 'RECORD_PAYMENT', { expenseId, groupId, amount, payerId, receiverId });
 
         await Notification.create({
             user_id: receiverId,
